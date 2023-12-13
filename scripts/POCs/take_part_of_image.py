@@ -1,15 +1,11 @@
 from ultralytics import YOLO
 
-print("1")
 import cv2
-import math 
+import os
+from datetime import datetime
 
-# model
 model = YOLO("yolo-Weights/yolov8n.pt")
 
-print("2")
-
-# object classes
 classNames = ["person", "bicycle", "car", "motorbike", "aeroplane", "bus", "train", "truck", "boat",
               "traffic light", "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat",
               "dog", "horse", "sheep", "cow", "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella",
@@ -24,44 +20,33 @@ classNames = ["person", "bicycle", "car", "motorbike", "aeroplane", "bus", "trai
 
 img = cv2.imread('D:/school/stage HTES lectoraat/git/quality-determination-for-CH-boiler-components/scripts/test_camera_with_yolo/bus.jpg')
 
-print("3")
-
 results = model(img)
 
-print("4")
-while True:
+current_date = datetime.now()
 
-    # coordinates
-    for r in results:
-        boxes = r.boxes
+current_date = current_date.strftime("%H-%M-%S_%d-%m-%Y")
 
-        for box in boxes:
-            # bounding box
-            x1, y1, x2, y2 = box.xyxy[0]
-            x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2) # convert to int values
+dir = 'D:/school/stage HTES lectoraat/git/quality-determination-for-CH-boiler-components/scripts/POCs/runs/' + current_date
 
-            # put box in cam
-            cv2.rectangle(img, (x1, y1), (x2, y2), (255, 0, 255), 3)
+os.mkdir(dir)
 
-            # confidence
-            confidence = math.ceil((box.conf[0]*100))/100
-            print("Confidence --->",confidence)
+# for r in results:
+# boxes = r.boxes
+boxes = results[0].boxes
 
-            # class name
-            cls = int(box.cls[0])
-            print("Class name -->", classNames[cls])
+for i in range(len(boxes)):
+    box = boxes[i]
+    x1, y1, x2, y2 = box.xyxy[0]
+    x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
+    subimg = img[y1:y2,x1:x2]
 
-            # object details
-            org = [x1, y1]
-            font = cv2.FONT_HERSHEY_SIMPLEX
-            fontScale = 1
-            color = (255, 0, 0)
-            thickness = 2
+    cls = int(box.cls[0]) 
 
-            cv2.putText(img, classNames[cls], org, font, fontScale, color, thickness)
+    img_name = str(i) + "_" + classNames[cls] + ".jpg"
 
-    cv2.imshow('img', img)
-    if cv2.waitKey(1) == ord('q'):
-        break
-
-cv2.destroyAllWindows()
+    temp_dir = (dir + "/" + classNames[cls])
+    if not os.path.exists(temp_dir):
+        os.mkdir(temp_dir)
+    os.chdir(temp_dir)
+    cv2.imwrite(img_name, subimg)
+    

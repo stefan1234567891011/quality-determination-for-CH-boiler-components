@@ -1,15 +1,9 @@
 from ultralytics import YOLO
-
-print("1")
 import cv2
-import math 
 
-# model
 model = YOLO("yolo-Weights/yolov8n.pt")
+model2 = YOLO("yolo-Weights/yolov8n.pt")
 
-print("2")
-
-# object classes
 classNames = ["person", "bicycle", "car", "motorbike", "aeroplane", "bus", "train", "truck", "boat",
               "traffic light", "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat",
               "dog", "horse", "sheep", "cow", "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella",
@@ -24,44 +18,36 @@ classNames = ["person", "bicycle", "car", "motorbike", "aeroplane", "bus", "trai
 
 img = cv2.imread('D:/school/stage HTES lectoraat/git/quality-determination-for-CH-boiler-components/scripts/test_camera_with_yolo/bus.jpg')
 
-print("3")
-
+print("detect image:")
 results = model(img)
 
-print("4")
-while True:
+detected_objects_with_quality = []
 
-    # coordinates
-    for r in results:
-        boxes = r.boxes
+print()
 
-        for box in boxes:
-            # bounding box
-            x1, y1, x2, y2 = box.xyxy[0]
-            x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2) # convert to int values
+for r in results:
+    boxes = r.boxes
 
-            # put box in cam
-            cv2.rectangle(img, (x1, y1), (x2, y2), (255, 0, 255), 3)
+    for i in range(len(boxes)):
+        box = boxes[i]
+        x1, y1, x2, y2 = box.xyxy[0]
+        x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
+        subimg = img[y1:y2,x1:x2]
 
-            # confidence
-            confidence = math.ceil((box.conf[0]*100))/100
-            print("Confidence --->",confidence)
+        cls = int(box.cls[0])
 
-            # class name
-            cls = int(box.cls[0])
-            print("Class name -->", classNames[cls])
+        print("detect subimage " + classNames[cls] + ":")
+        result_sub_img = model(subimg)
 
-            # object details
-            org = [x1, y1]
-            font = cv2.FONT_HERSHEY_SIMPLEX
-            fontScale = 1
-            color = (255, 0, 0)
-            thickness = 2
+        try:
+            box_sub = result_sub_img[0].boxes[0]
+            cls_sub = int(box.cls[0])
 
-            cv2.putText(img, classNames[cls], org, font, fontScale, color, thickness)
+            print("quality: " + classNames[cls_sub] + "\n")
+            detected_objects_with_quality.append(classNames[cls] + ": " + classNames[cls_sub])
+        
+        except Exception as e:
+            print("An exception occurred:", str(e))
+            detected_objects_with_quality.append(classNames[cls] + ": no object found")
 
-    cv2.imshow('img', img)
-    if cv2.waitKey(1) == ord('q'):
-        break
-
-cv2.destroyAllWindows()
+print(detected_objects_with_quality)
